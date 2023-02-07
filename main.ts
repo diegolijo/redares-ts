@@ -1,15 +1,12 @@
 import * as XLSX from 'xlsx';
-/* import * as fs from 'fs';
-import { Readable } from 'stream';
+import * as fs from 'fs';
 
-
-XLSX.set_fs(fs);
-XLSX.stream.set_readable(Readable); */
 
 const workbook: any = XLSX.readFile('radares.XLSX', { type: 'array' });
 const radarObj: any = [];
-const fijosGal = [];
-const movilesGal = [];
+const fijosGal: any = [];
+const movilesGal: any = [];
+const tramoGal: any = [];
 for (const [index, value] of Object.entries(workbook.Sheets.Hoja1)) {
     if (index !== '!margins' && index !== '!ref') {
         const v: any = value;
@@ -26,26 +23,40 @@ for (const [index, value] of Object.entries(workbook.Sheets.Hoja1)) {
             radarObj[count].tipo = v.v;
         }
         if (field === 'D') {
-            radarObj[count].pk = v.v;
+            if (typeof v.w === 'string') {
+                radarObj[count].pk = [];
+                const kms = v.w.split('-');
+                for (let km of kms) {
+                    km = km.replace(',', '.');
+                    radarObj[count].pk.push(Number.parseFloat(km));
+                }
+            }
         }
         if (field === 'E') {
             radarObj[count].sentido = v.v;
         }
-        if (field === 'F' && radarObj[count].tipo === 'Radar Fijo'
-            && (radarObj[count].provincia === 'Ourense'
-                || radarObj[count].provincia === 'Pontevedra'
-                || radarObj[count].provincia === 'Lugo'
-                || radarObj[count].provincia === 'Coruña, A')) {
-
-            fijosGal.push(radarObj[count]);
-        }
-        if (field === 'F' && radarObj[count].tipo === 'Radar Móvil'
-            && (radarObj[count].provincia === 'Ourense'
-                || radarObj[count].provincia === 'Pontevedra'
-                || radarObj[count].provincia === 'Lugo'
-                || radarObj[count].provincia === 'Coruña, A')) {
-            movilesGal.push(radarObj[count]);
+        if (field === 'F' && (radarObj[count].provincia === 'Ourense'
+            || radarObj[count].provincia === 'Pontevedra'
+            || radarObj[count].provincia === 'Lugo'
+            || radarObj[count].provincia === 'Coruña, A')) {
+            if (radarObj[count].tipo === 'Radar Fijo') {
+                fijosGal.push(radarObj[count]);
+            }
+            if (radarObj[count].tipo === 'Radar Móvil') {
+                movilesGal.push(radarObj[count]);
+            }
+            if (radarObj[count].tipo === 'Radar Tramo') {
+                tramoGal.push(radarObj[count]);
+            }
         }
     }
 }
-radarObj;
+
+fs.mkdir('out', (value) => {
+    const data = JSON.stringify(fijosGal);
+    fs.writeFileSync('out/fijosGal.json', data);
+    const data2 = JSON.stringify(movilesGal);
+    fs.writeFileSync('out/movilesGal.json', data2);
+    const data3 = JSON.stringify(tramoGal);
+    fs.writeFileSync('out/tramoGal.json', data3);
+})
