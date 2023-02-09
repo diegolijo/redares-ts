@@ -59,7 +59,6 @@ for (const [index, value] of Object.entries(workbook.Sheets.Hoja1)) {
                 tramoGal.push(radarObj[count]);
             }
 
-            radarObj[count].tipo = 'Radar Tramo' ? 'Tramo' : radarObj[count].tipo = 'Radar Fijo' ? 'Fijo' : 'Mobil';
             findLatLangsInPK(radarObj[count]);
             todosGal.push(radarObj[count]);
 
@@ -85,6 +84,7 @@ function findLatLangsInPK(radar: any) {
         const points = puntosKm.features.filter(el =>
             (el.properties.numero === Math.ceil(pk) || el.properties.numero === Math.round(pk))
             && el.properties.Nombre === radar.carretera);
+
         for (const iterator of points) {
             const geo = {
                 lat: iterator.geometry.coordinates[1],
@@ -93,6 +93,9 @@ function findLatLangsInPK(radar: any) {
             }
             radar.coords.push(geo);
         }
+    }
+    if (radar.carretera === 'AC-543') {
+    
     }
     return radar;
 }
