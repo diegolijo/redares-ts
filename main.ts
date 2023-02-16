@@ -4,12 +4,14 @@ import * as fs from 'fs';
 
 const workbook: any = XLSX.readFile('radares.XLSX', { type: 'array' });
 const radarObj: any = [];
-const fijosGal: any = [];
-const movilesGal: any = [];
-const tramoGal: any = [];
-const todosGal: any = [];
+const fijosObj: any = [];
+const movilesObj: any = [];
+const tramoObj: any = [];
+const todosObj: any = [];
 //********************/
 const puntosKm = require('./Puntos_kilometricos.json');
+
+parseRoads();
 
 for (const [index, value] of Object.entries(workbook.Sheets.Hoja1)) {
     if (index !== '!margins' && index !== '!ref') {
@@ -39,42 +41,42 @@ for (const [index, value] of Object.entries(workbook.Sheets.Hoja1)) {
         if (field === 'E') {
             radarObj[count].sentido = v.v;
         }
-        if (field === 'F' && (radarObj[count].provincia === 'Ourense'
+        if (field === 'F' /* && (radarObj[count].provincia === 'Ourense'
             || radarObj[count].provincia === 'Pontevedra'
             || radarObj[count].provincia === 'Lugo'
-            || radarObj[count].provincia === 'Coruña, A')) {
+            || radarObj[count].provincia === 'Coruña, A') */) {
             if (radarObj[count].tipo === 'Radar Fijo') {
                 radarObj[count].tipo === 'Fijo'
                 findLatLangsInPK(radarObj[count]);
-                fijosGal.push(radarObj[count]);
+                fijosObj.push(radarObj[count]);
             }
             if (radarObj[count].tipo === 'Radar Móvil') {
                 radarObj[count].tipo === 'Movil'
                 findLatLangsInPK(radarObj[count]);
-                movilesGal.push(radarObj[count]);
+                movilesObj.push(radarObj[count]);
             }
             if (radarObj[count].tipo === 'Radar Tramo') {
                 radarObj[count].tipo = 'Tramo'
                 findLatLangsInPK(radarObj[count])
-                tramoGal.push(radarObj[count]);
+                tramoObj.push(radarObj[count]);
             }
-
-            findLatLangsInPK(radarObj[count]);
-            todosGal.push(radarObj[count]);
-
+            if (radarObj[count].tipo !== 'Radar Móvil') {
+                findLatLangsInPK(radarObj[count]);
+                todosObj.push(radarObj[count]);
+            }
         }
     }
 }
 
 fs.mkdir('out', (value) => {
-    const data = JSON.stringify(fijosGal);
-    fs.writeFileSync('out/fijosGal.json', data);
-    const data2 = JSON.stringify(movilesGal);
-    fs.writeFileSync('out/movilesGal.json', data2);
-    const data3 = JSON.stringify(tramoGal);
-    fs.writeFileSync('out/tramoGal.json', data3);
-    const data4 = JSON.stringify(todosGal);
-    fs.writeFileSync('out/todosGal.json', data4);
+    const data = JSON.stringify(fijosObj);
+    fs.writeFileSync('out/fijosEsp.json', data);
+    const data2 = JSON.stringify(movilesObj);
+    fs.writeFileSync('out/movilesEsp.json', data2);
+    const data3 = JSON.stringify(tramoObj);
+    fs.writeFileSync('out/tramoEsp.json', data3);
+    const data4 = JSON.stringify(todosObj);
+    fs.writeFileSync('out/noMovilGaEsp.json', data4);
 })
 
 
@@ -95,9 +97,21 @@ function findLatLangsInPK(radar: any) {
         }
     }
     if (radar.carretera === 'AC-543') {
-    
+
     }
     return radar;
+}
+
+function parseRoads() {
+    const roads = {};
+    for (const point of puntosKm.features) {
+        if (!roads[point.properties.Nombre]) {
+            roads[point.properties.Nombre] = [];
+        }
+        roads[point.properties.Nombre].push({ km: point.properties.numero, lat: point.geometry.coordinates[1], long: point.geometry.coordinates[0], alt: point.geometry.coordinates[2] });
+        roads[point.properties.Nombre] = roads[point.properties.Nombre].sort((a, b) => { return a.km - b.km; })
+    }
+    console.log(roads);
 }
 
 export interface IProperties {
